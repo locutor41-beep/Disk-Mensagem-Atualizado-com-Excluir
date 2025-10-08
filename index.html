@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Disk Mensagem Studio Neil Marcos</title>
+
+  <!-- Manifest + cores -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#111827"/>
+
+  <!-- Ícone fallback (navegadores) -->
+  <link rel="icon" href="/icons/icon-192.png">
+
+  <style>
+    :root{--bg:#0b1220;--card:#111827;--txt:#e5e7eb;--brand:#22c55e}
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui, Arial, sans-serif;background:var(--bg);color:var(--txt)}
+    .wrap{max-width:900px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;gap:12px;margin:24px 0}
+    header img{width:56px;height:56px;border-radius:12px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px 20px;margin:16px 0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    h1{margin:0;font-size:22px}
+    button{cursor:pointer;border:0;border-radius:12px;padding:12px 16px;font-weight:700}
+    .primary{background:var(--brand);color:#062b13}
+    .ghost{background:#0b1220;color:#cbd5e1;border:1px solid #334155}
+    .grid{display:grid;gap:12px}
+    @media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+    a{color:#86efac}
+    footer{opacity:.7;margin-top:24px;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <img src="/icons/icon-192.png" alt="Logo">
+      <div>
+        <h1>Disk Mensagem Studio Neil Marcos</h1>
+        <div>Cliente • Faça seu pedido</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <h2 style="margin-top:0">Novo pedido</h2>
+      <form id="pedidoForm" class="grid">
+        <input required name="destinatario" placeholder="Nome de quem vai receber" />
+        <input required name="remetentes" placeholder="Nomes de quem está mandando" />
+        <input required name="endereco" placeholder="Endereço do evento" />
+        <input required name="data" type="date" />
+        <input required name="hora" type="time" />
+        <input name="youtube" placeholder="Link da música (YouTube)" />
+        <textarea name="mensagem" placeholder="Mensagem" rows="4"></textarea>
+        <button class="primary" type="submit">Enviar pedido</button>
+        <button id="installBtn" class="ghost" type="button" hidden>Instalar app</button>
+      </form>
+      <p id="status"></p>
+    </div>
+
+    <footer>Funciona offline e pode ser instalado no Android (Chrome): menu ⋮ → <em>Instalar app</em>.</footer>
+  </div>
+
+  <script>
+    // --- Enviar "pedido" (simples: guarda local e mostra na tela) ---
+    const form = document.getElementById('pedidoForm');
+    const statusEl = document.getElementById('status');
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const data = Object.fromEntries(new FormData(form).entries());
+      const pedidos = JSON.parse(localStorage.getItem('pedidos')||'[]');
+      pedidos.push({...data, createdAt:new Date().toISOString()});
+      localStorage.setItem('pedidos', JSON.stringify(pedidos));
+      statusEl.textContent = '✅ Pedido enviado! (salvo no aparelho)';
+      form.reset();
+    });
+
+    // --- PWA: instalar manualmente com botão ---
+    let deferredPrompt;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e)=>{
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.hidden = false;
+    });
+
+    installBtn.addEventListener('click', async ()=>{
+      if(!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.hidden = true;
+    });
+
+    window.addEventListener('appinstalled', ()=> {
+      installBtn.hidden = true;
+    });
+
+    // --- Registrar Service Worker ---
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
